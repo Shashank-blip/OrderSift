@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Cpu, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
+import { Cpu, CheckCircle2, AlertCircle, RefreshCw } from "@/components/Icons";
 import { OllamaHealthStatus } from "@/lib/ai/ollama";
 
 interface OllamaStatusBadgeProps {

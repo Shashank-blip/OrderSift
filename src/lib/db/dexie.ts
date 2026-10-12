@@ -1,7 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import { ParsedOrder } from "@/lib/types/order";
 
-// Safe browser-only IndexedDB helper
 class OrderSiftDatabase extends Dexie {
   orders!: Table<ParsedOrder, string>;
 
@@ -13,5 +12,16 @@ class OrderSiftDatabase extends Dexie {
   }
 }
 
-export const db = new OrderSiftDatabase();
+// Lazy instantiate only on client
+let dbInstance: OrderSiftDatabase | null = null;
 
+export function getDb(): OrderSiftDatabase {
+  if (typeof window === "undefined") {
+    // Return empty mock during SSR
+    return {} as OrderSiftDatabase;
+  }
+  if (!dbInstance) {
+    dbInstance = new OrderSiftDatabase();
+  }
+  return dbInstance;
+}

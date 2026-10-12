@@ -7,7 +7,7 @@ import { OrdersDashboard } from "@/components/OrdersDashboard";
 import { OllamaStatusBadge } from "@/components/OllamaStatusBadge";
 import { ParsedOrder } from "@/lib/types/order";
 import { OllamaHealthStatus } from "@/lib/ai/ollama";
-import { db } from "@/lib/db/dexie";
+import { getDb } from "@/lib/db/dexie";
 import {
   ShieldCheck,
   Zap,
@@ -15,7 +15,7 @@ import {
   Cpu,
   ArrowUpRight,
   LockKeyhole
-} from "lucide-react";
+} from "@/components/Icons";
 
 export default function Home() {
   const [isMounted, setIsMounted] = useState(false);
@@ -44,6 +44,8 @@ export default function Home() {
   const loadSavedOrders = async () => {
     if (typeof window === "undefined") return;
     try {
+      const db = getDb();
+      if (!db.orders) return;
       const allOrders = await db.orders.orderBy("createdAt").reverse().toArray();
       setOrders(allOrders);
     } catch (err) {
@@ -99,6 +101,7 @@ export default function Home() {
 
   const handleSaveOrder = async (finalOrder: ParsedOrder) => {
     try {
+      const db = getDb();
       await db.orders.put(finalOrder);
       await loadSavedOrders();
       setActiveDraft(null);
@@ -110,6 +113,7 @@ export default function Home() {
 
   const handleDeleteOrder = async (id: string) => {
     try {
+      const db = getDb();
       await db.orders.delete(id);
       await loadSavedOrders();
     } catch (err) {
@@ -119,6 +123,7 @@ export default function Home() {
 
   const handleUpdateStatus = async (id: string, status: ParsedOrder["status"]) => {
     try {
+      const db = getDb();
       await db.orders.update(id, { status, updatedAt: new Date().toISOString() });
       await loadSavedOrders();
     } catch (err) {

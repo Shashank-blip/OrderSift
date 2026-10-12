@@ -3,19 +3,14 @@
 import React, { useState } from "react";
 import {
   Check,
-  Copy,
   AlertTriangle,
   Plus,
   Trash2,
   Calendar,
-  Clock,
-  MapPin,
   User,
-  Phone,
-  Mail,
   Save,
   MessageCircle
-} from "lucide-react";
+} from "@/components/Icons";
 import { ParsedOrder, OrderItem } from "@/lib/types/order";
 import { formatCurrency } from "@/lib/utils";
 

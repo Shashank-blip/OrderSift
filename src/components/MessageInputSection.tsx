@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { MessageSquare, ArrowRight } from "lucide-react";
+import { MessageSquare, ArrowRight } from "@/components/Icons";
 import { SAMPLE_MESSAGES } from "@/lib/ai/prompts";
 
 interface MessageInputSectionProps {

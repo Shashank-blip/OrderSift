@@ -7,14 +7,8 @@ import {
   FileText,
   Download,
   Trash2,
-  CheckCircle2,
-  Clock,
-  Package,
-  Share2,
-  Calendar,
-  User,
-  ExternalLink
-} from "lucide-react";
+  Package
+} from "@/components/Icons";
 
 interface OrdersDashboardProps {
   orders: ParsedOrder[];
