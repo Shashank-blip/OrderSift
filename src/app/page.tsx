@@ -12,10 +12,9 @@ import {
   ShieldCheck,
   Zap,
   HardDrive,
-  Database,
   Cpu,
-  Layers,
-  ArrowUpRight
+  ArrowUpRight,
+  LockKeyhole
 } from "lucide-react";
 
 export default function Home() {
@@ -128,22 +127,19 @@ export default function Home() {
   };
 
   return (
-    <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-      {/* Header Bar */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-8 border-b border-slate-200 mb-8">
+    <main className="max-w-7xl mx-auto px-5 sm:px-8 py-6 lg:py-10">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-5 pb-7 border-b border-stone-900/15 mb-12">
         <div>
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
-              <Zap className="w-5 h-5 fill-white" />
+          <div className="flex items-center space-x-3.5">
+            <div className="w-10 h-10 rounded-full bg-stone-900 text-amber-300 flex items-center justify-center">
+              <Zap className="w-4 h-4 fill-current" />
             </div>
             <div>
-              <div className="flex items-center space-x-2">
-                <h1 className="text-2xl font-black tracking-tight text-slate-900">OrderSift</h1>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-900 text-white px-2 py-0.5 rounded-md">
-                  Local-First AI
-                </span>
+              <div className="flex items-baseline space-x-3">
+                <h1 className="font-serif text-2xl font-bold tracking-tight text-stone-900">OrderSift</h1>
+                <span className="eyebrow">private order desk</span>
               </div>
-              <p className="text-xs text-slate-500 font-medium">From messy messages to orders you can act on.</p>
+              <p className="text-xs text-stone-500">A quieter way to turn conversation into action.</p>
             </div>
           </div>
         </div>
@@ -154,11 +150,15 @@ export default function Home() {
             loading={checkingHealth}
             onRefresh={fetchHealth}
           />
+          <div className="hidden sm:flex items-center gap-2 text-xs text-stone-500 mr-2">
+            <LockKeyhole className="w-3.5 h-3.5 text-amber-700" />
+            <span>Nothing leaves this device</span>
+          </div>
           <a
             href="https://github.com/Shashank-blip/OrderSift"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-full transition shadow-sm"
+            className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3.5 py-2 bg-stone-900 hover:bg-amber-700 text-white rounded-md transition"
           >
             <span>GitHub</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
@@ -166,41 +166,50 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Value Prop Pill Badges */}
-      <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-start space-x-3">
-          <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
+      <section className="mb-10 max-w-3xl">
+        <p className="eyebrow mb-3">The daily view</p>
+        <h2 className="font-serif text-4xl sm:text-5xl leading-[1.04] tracking-tight text-stone-900">
+          Make sense of the messages<br className="hidden sm:block" /> waiting in your inbox.
+        </h2>
+        <p className="mt-5 max-w-xl text-base leading-7 text-stone-600">
+          Paste a customer conversation. Get a clean, editable order without sending private details to another cloud.
+        </p>
+      </section>
+
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-px bg-stone-900/15 border border-stone-900/15 mb-10">
+        <div className="bg-[#f7f6f2] p-5 flex items-start space-x-3">
+          <div className="text-amber-700 pt-0.5">
             <ShieldCheck className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-slate-800">100% Privacy by Design</h4>
-            <p className="text-[11px] text-slate-500 mt-0.5">Customer phone numbers, addresses, and messages never touch cloud servers.</p>
+            <h4 className="text-xs font-bold text-stone-900">Private by default</h4>
+            <p className="text-xs text-stone-500 mt-1">Messages stay on your machine.</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-start space-x-3">
-          <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+        <div className="bg-[#f7f6f2] p-5 flex items-start space-x-3">
+          <div className="text-amber-700 pt-0.5">
             <Cpu className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-slate-800">Zero Marginal API Cost</h4>
-            <p className="text-[11px] text-slate-500 mt-0.5">Powered by open-weight Qwen 2.5 Instruct running on your own hardware.</p>
+            <h4 className="text-xs font-bold text-stone-900">Local intelligence</h4>
+            <p className="text-xs text-stone-500 mt-1">Ollama first, fallback always.</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-start space-x-3">
-          <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
+        <div className="bg-[#f7f6f2] p-5 flex items-start space-x-3">
+          <div className="text-amber-700 pt-0.5">
             <HardDrive className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-slate-800">IndexedDB Persistence</h4>
-            <p className="text-[11px] text-slate-500 mt-0.5">Offline-first local browser database. Export directly to CSV, JSON, or print.</p>
+            <h4 className="text-xs font-bold text-stone-900">A useful ledger</h4>
+            <p className="text-xs text-stone-500 mt-1">Saved locally, ready to export.</p>
           </div>
         </div>
       </section>
 
       {/* Main Parser Input */}
-      <section className="mb-8">
+      <section className="mb-10">
         <MessageInputSection
           onParse={handleParseMessage}
           isLoading={isParsing}
@@ -229,12 +238,12 @@ export default function Home() {
       </section>
 
       {/* Footer / Open Innovation Note */}
-      <footer className="mt-16 pt-8 border-t border-slate-200 text-center text-xs text-slate-500 space-y-2">
+      <footer className="mt-16 pt-7 border-t border-stone-900/15 flex flex-col sm:flex-row justify-between gap-2 text-xs text-stone-500">
         <p>
-          <strong>OrderSift</strong> • Built for the DEV Side Hustle Challenge: Open-Source AI Edition.
+          <strong className="text-stone-700">OrderSift</strong> · Local order desk
         </p>
-        <p className="text-slate-400">
-          Inference: Ollama + Qwen 2.5 Instruct • Database: Client-side IndexedDB • License: MIT
+        <p className="text-stone-400">
+          Ollama · IndexedDB · MIT
         </p>
       </footer>
     </main>

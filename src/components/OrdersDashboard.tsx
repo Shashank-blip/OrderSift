@@ -72,23 +72,24 @@ export function OrdersDashboard({ orders, onDeleteOrder, onUpdateStatus }: Order
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+    <div className="paper-card p-6 sm:p-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-            <span>Local Orders Ledger</span>
-            <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
+          <p className="eyebrow mb-2">02 / ledger</p>
+          <h2 className="font-serif text-2xl font-bold text-stone-900 flex items-center space-x-2">
+            <span>Orders in motion</span>
+            <span className="text-xs font-sans bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-semibold">
               {orders.length}
             </span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">Stored securely in your local IndexedDB database</p>
+          <p className="text-xs text-stone-500 mt-1">Your local ledger, not another dashboard in the cloud.</p>
         </div>
 
         <div className="flex items-center space-x-2">
           <button
             onClick={exportToCSV}
             disabled={orders.length === 0}
-            className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition disabled:opacity-40"
+            className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-2 bg-stone-100 hover:bg-amber-100 text-stone-700 rounded-md transition disabled:opacity-40"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Export CSV</span>
@@ -96,7 +97,7 @@ export function OrdersDashboard({ orders, onDeleteOrder, onUpdateStatus }: Order
           <button
             onClick={exportToJSON}
             disabled={orders.length === 0}
-            className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition disabled:opacity-40"
+            className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-2 bg-stone-100 hover:bg-amber-100 text-stone-700 rounded-md transition disabled:opacity-40"
           >
             <FileText className="w-3.5 h-3.5" />
             <span>Export JSON</span>
@@ -111,7 +112,7 @@ export function OrdersDashboard({ orders, onDeleteOrder, onUpdateStatus }: Order
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search by customer, order #, or item..."
-          className="text-sm px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-500 flex-1"
+          className="text-sm px-3.5 py-2 bg-stone-50 border border-stone-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-amber-500/30 flex-1"
         />
 
         <div className="flex gap-1.5">
@@ -121,8 +122,8 @@ export function OrdersDashboard({ orders, onDeleteOrder, onUpdateStatus }: Order
               onClick={() => setFilterStatus(status)}
               className={`text-xs px-3 py-1.5 rounded-lg capitalize font-medium transition ${
                 filterStatus === status
-                  ? "bg-slate-900 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  ? "bg-stone-900 text-white"
+                  : "bg-stone-100 text-stone-600 hover:bg-amber-100"
               }`}
             >
               {status}
@@ -133,10 +134,10 @@ export function OrdersDashboard({ orders, onDeleteOrder, onUpdateStatus }: Order
 
       {/* Orders List / Table */}
       {filteredOrders.length === 0 ? (
-        <div className="text-center py-12 border-2 border-dashed border-slate-100 rounded-xl">
-          <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-          <p className="text-sm font-medium text-slate-600">No orders logged yet</p>
-          <p className="text-xs text-slate-400 mt-1">Paste a customer message above to test local AI extraction</p>
+        <div className="text-center py-12 border border-dashed border-stone-300 rounded-lg">
+          <Package className="w-10 h-10 text-stone-300 mx-auto mb-2" />
+          <p className="text-sm font-medium text-stone-600">No orders in the ledger</p>
+          <p className="text-xs text-stone-400 mt-1">Paste a customer message above to make the first one.</p>
         </div>
       ) : (
         <div className="divide-y divide-slate-100">

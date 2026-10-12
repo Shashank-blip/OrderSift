@@ -119,14 +119,14 @@ export function OrderReviewCard({ order: initialOrder, modelUsed, onSaveOrder, o
   const missingFields = order.missingFields || [];
 
   return (
-    <div className="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden mb-8 transition-all">
+    <div className="paper-card overflow-hidden mb-10 transition-all">
       {/* Top Banner */}
-      <div className="bg-slate-900 text-white px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-stone-900 text-white px-6 py-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center space-x-3">
-          <span className="text-xs uppercase tracking-wider font-semibold bg-brand-500/20 text-brand-400 px-2.5 py-1 rounded-md border border-brand-500/30">
-            Extraction Review
+          <span className="eyebrow !text-amber-300">
+          01 / review
           </span>
-          <span className="text-sm font-medium text-slate-300">
+          <span className="text-sm font-medium text-stone-300">
             Inference: <span className="text-white font-mono">{modelUsed || "Qwen 2.5 Instruct"}</span>
           </span>
         </div>
@@ -134,13 +134,13 @@ export function OrderReviewCard({ order: initialOrder, modelUsed, onSaveOrder, o
         <div className="flex items-center space-x-2">
           <button
             onClick={onDiscard}
-            className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border border-slate-700 hover:border-slate-500 transition"
+            className="text-xs text-stone-400 hover:text-white px-3 py-1.5 rounded-md border border-stone-700 hover:border-stone-500 transition"
           >
             Discard
           </button>
           <button
             onClick={handleFinalSave}
-            className="inline-flex items-center space-x-1.5 text-xs bg-brand-500 hover:bg-brand-400 text-slate-950 font-semibold px-4 py-1.5 rounded-lg transition shadow-sm"
+            className="inline-flex items-center space-x-1.5 text-xs bg-amber-400 hover:bg-amber-300 text-stone-950 font-semibold px-4 py-1.5 rounded-md transition"
           >
             <Save className="w-3.5 h-3.5" />
             <span>Confirm & Save to Local DB</span>

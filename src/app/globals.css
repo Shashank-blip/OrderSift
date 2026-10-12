@@ -3,18 +3,41 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 15, 23, 42;
-  --background-start-rgb: 248, 250, 252;
-  --background-end-rgb: 241, 245, 249;
+  --foreground-rgb: 27, 29, 35;
+  --background-start-rgb: 247, 246, 242;
+  --background-end-rgb: 239, 238, 233;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background:
+    radial-gradient(circle at 85% 0%, rgba(217, 119, 6, 0.08), transparent 28rem),
+    linear-gradient(180deg, rgb(var(--background-start-rgb)), rgb(var(--background-end-rgb)));
   min-height: 100vh;
+}
+
+::selection {
+  background: #f59e0b;
+  color: #1c1917;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.paper-card {
+  background: rgba(255, 255, 253, 0.86);
+  border: 1px solid rgba(28, 25, 23, 0.12);
+  box-shadow: 0 18px 45px rgba(28, 25, 23, 0.06);
+}
+
+.eyebrow {
+  color: #a16207;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
