@@ -1,73 +1,106 @@
 # OrderSift
 
-> **From messy messages to orders you can act on.**  
-> Local-first, privacy-preserving order extraction engine powered by open-weight AI (Ollama + Qwen 2.5 Instruct) and IndexedDB.
+OrderSift turns messy customer messages into clean, structured orders that a merchant can act on quickly.
 
-Built for the **DEV "Side Hustle" Challenge: Open-Source AI Edition**.
+> Turn chaotic chats into organized, valid orders with AI-powered extraction, local-first processing, and zero cloud leakage.
 
----
+OrderSift is built for solo businesses, home bakers, caterers, and micro-merchants who receive orders over WhatsApp, Instagram DMs, email, and SMS. Instead of manually copying details from messy conversations, the app extracts useful order data, validates missing fields, and helps send smart follow-up questions back to the customer.
 
-## The Problem
+## Why this exists
 
-Solo creators, home bakers, caterers, custom craftsmen, and micro-merchants receive order requests scattered across:
-- **WhatsApp chats**
-- **Instagram Direct Messages**
-- **SMS & Email threads**
+Most small businesses are still handling orders by hand:
 
-These messages are notoriously messy:
-> *"Hey! Need 2 dozen choc fudge cupcakes for Saturday 3pm please. No nuts my nephew is allergic! Pls deliver to 742 Evergreen Terr, Springfield. Call me at 555-0199 when outside."*
+- reading long chat histories
+- extracting item details and quantities
+- reconciling delivery dates and contact info
+- chasing missing information manually
 
-Merchants spend hours manually transcribing, deciphering, checking missing fields, and calculating totals—or worse, lose customer data in chaotic chat histories. Existing tools require sending customer data to closed proprietary cloud LLMs with expensive per-token fees and privacy risks.
+This creates friction, mistakes, and lost revenue. OrderSift helps simplify that workflow with a local-first, privacy-conscious order intake assistant.
 
----
+## What OrderSift does
 
-## The Solution: OrderSift
+- Extracts structured order data from messy, real-world messages
+- Identifies product details, quantities, delivery dates, and customer contact data
+- Validates required fields before an order is considered complete
+- Generates polite follow-up prompts when something is missing
+- Persists data locally for privacy and offline use
+- Supports export to CSV, JSON, and printable summaries
 
-OrderSift parses raw, messy conversation fragments into structured, validated JSON orders in seconds, with **zero cloud data leakage** and **zero marginal API costs**:
+## Key features
 
-1. **Local-First Inference**: Runs 100% locally using **Ollama** and **Qwen 2.5 Instruct** (or built-in fallback engine). Customer names, phone numbers, and delivery addresses never leave the device.
-2. **Deterministic Schema Validation**: Validates extracted orders via **Zod schemas**, flagging missing essential fields (e.g. delivery date, phone number).
-3. **Smart Follow-Up Generator**: Generates 1-click polite clarification messages to send back to customers when details are missing.
-4. **Local IndexedDB Persistence**: Zero-setup local database stored directly in the merchant's browser with Dexie.js.
-5. **Actionable Exports**: 1-click export to **CSV**, **Structured JSON**, or direct printable receipt views.
+- Local-first AI inference with Ollama
+- Structured output validation using Zod
+- IndexedDB storage via Dexie
+- Built with Next.js, React, TypeScript, and Tailwind CSS
+- Designed for privacy: customer data stays local by default
+- Optional integration with Tiger Data / PostgreSQL for catalog matching and cloud sync
 
----
+## Tech stack
 
-## Tech Stack
+- Frontend: Next.js 14, React 18, TypeScript, Tailwind CSS
+- Local AI: Ollama + Qwen 2.5 Instruct
+- Persistence: Dexie + IndexedDB
+- Validation: Zod
+- Optional backend/data layer: Tiger Data (TimescaleDB / PostgreSQL with pgvector)
 
-- **Frontend**: Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS, Lucide Icons
-- **Local AI Engine**: Ollama running `qwen2.5:latest` (or `qwen2.5:3b`, `qwen2.5:7b`) with native JSON Schema output mode
-- **Data Persistence**: IndexedDB via Dexie.js (offline-ready, zero-cloud storage)
-- **Cloud Database & Vector Search**: Tiger Data (TimescaleDB / PostgreSQL with `pgvector` managed via Tiger MCP)
-- **Validation**: Zod runtime schema validation and missing-field auditor
+## Quick start
 
----
+### Prerequisites
 
-## Partner Track Integration: Tiger Data
+- Node.js 18+
+- Optional: Ollama for local AI inference
 
-OrderSift pairs local-first order extraction with **Tiger Data** (TimescaleDB / PostgreSQL with `pgvector` extension) managed through the **Tiger MCP**:
-- **Merchant Catalog Matching**: Uses `pgvector` in Tiger Cloud to match conversational item descriptions (e.g. *"2 boxes fudge buns"*) to official merchant SKUs (`BK-CUP-01: Double Chocolate Fudge Cupcake`) and verify allergen warnings.
-- **Order Synchronization**: Optional encrypted cloud sync table (`customer_orders_sync`) for multi-device order views without compromising on local-first privacy.
-- **MCP Database Management**: Seamlessly provisioned and queried via Tiger MCP (`db_query`, `service_list`).
-
----
-
-## Getting Started
-
-### 1. Prerequisites
-- [Node.js 18+](https://nodejs.org/)
-- Optional (for real local AI inference): [Ollama](https://ollama.com/)
-
-```bash
-# Pull and start Qwen 2.5
-ollama run qwen2.5:latest
-```
-
-### 2. Install & Run OrderSift
+### Install and run
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Then open:
+
+```text
+http://localhost:3000
+```
+
+### Optional: run local AI model
+
+```bash
+ollama run qwen2.5:latest
+```
+
+## How it works
+
+1. A merchant pastes or inputs a raw customer message.
+2. OrderSift analyzes the message and extracts JSON order data.
+3. Required fields are checked and validated.
+4. If information is missing, the app suggests a concise follow-up message.
+5. The resulting order is saved locally and can be exported or reviewed later.
+
+## Project structure
+
+```text
+.
+├── app/
+├── components/
+├── lib/
+├── public/
+├── styles/
+├── package.json
+├── tsconfig.json
+├── next.config.js
+├── README.md
+└── ...
+```
+
+## Notes
+
+This project is designed as a local-first prototype and proof of concept. It prioritizes privacy, low-friction order handling, and practical merchant workflows over heavy cloud dependence.
+
+## Contributing
+
+Contributions are welcome. If you want to improve the extraction logic, UX, validation rules, or export flows, feel free to open an issue or submit a pull request.
+
+## License
+
+This project currently does not include a license file. If you plan to share or reuse it publicly, consider adding an appropriate open-source license.
