@@ -21,10 +21,16 @@ export function OllamaStatusBadge({ status, loading, onRefresh }: OllamaStatusBa
   }
 
   if (status?.isAvailable) {
+    const providerLabel = status.provider === "groq" 
+      ? "Groq Cloud" 
+      : status.provider === "openai-compatible" 
+      ? "Open-Weight API" 
+      : "Ollama Connected";
+
     return (
       <div className="flex items-center space-x-2 text-xs bg-emerald-50 text-emerald-800 px-3 py-1.5 rounded-full border border-emerald-200 font-medium">
         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-        <span>Ollama Connected: <strong className="font-semibold">{status.model}</strong></span>
+        <span>{providerLabel}: <strong className="font-semibold">{status.model}</strong></span>
         <button
           onClick={onRefresh}
           title="Refresh connection"
