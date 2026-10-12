@@ -38,7 +38,17 @@ OrderSift parses raw, messy conversation fragments into structured, validated JS
 - **Frontend**: Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS, Lucide Icons
 - **Local AI Engine**: Ollama running `qwen2.5:latest` (or `qwen2.5:3b`, `qwen2.5:7b`) with native JSON Schema output mode
 - **Data Persistence**: IndexedDB via Dexie.js (offline-ready, zero-cloud storage)
+- **Cloud Database & Vector Search**: Tiger Data (TimescaleDB / PostgreSQL with `pgvector` managed via Tiger MCP)
 - **Validation**: Zod runtime schema validation and missing-field auditor
+
+---
+
+## Partner Track Integration: Tiger Data
+
+OrderSift pairs local-first order extraction with **Tiger Data** (TimescaleDB / PostgreSQL with `pgvector` extension) managed through the **Tiger MCP**:
+- **Merchant Catalog Matching**: Uses `pgvector` in Tiger Cloud to match conversational item descriptions (e.g. *"2 boxes fudge buns"*) to official merchant SKUs (`BK-CUP-01: Double Chocolate Fudge Cupcake`) and verify allergen warnings.
+- **Order Synchronization**: Optional encrypted cloud sync table (`customer_orders_sync`) for multi-device order views without compromising on local-first privacy.
+- **MCP Database Management**: Seamlessly provisioned and queried via Tiger MCP (`db_query`, `service_list`).
 
 ---
 

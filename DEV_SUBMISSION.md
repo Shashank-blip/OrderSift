@@ -40,7 +40,22 @@ Closed-source LLM APIs (OpenAI, Anthropic, Google) charge per token and send pri
 
 ---
 
-## 4. Source Code & Live Links
+## 4. Partner Technology: Best Use of Tiger Data ($100 Track)
+
+OrderSift integrates with **Tiger Cloud (Managed TimescaleDB & PostgreSQL with `pgvector`)** managed directly through **Tiger MCP**:
+
+1. **Merchant Menu & Catalog with `pgvector`**:
+   - OrderSift matches fuzzy, colloquial customer names (e.g. *"2 boxes fudge buns"*) against the merchant's official inventory (`BK-CUP-01: Double Chocolate Fudge Cupcake`) using semantic similarity and allergen auditing.
+   - Initialized schema with `CREATE EXTENSION vector;` and table `merchant_catalog (id, item_code, name, category, unit_price, allergens, embedding vector(384))`.
+2. **Cloud Order Sync & Ledger**:
+   - Stores finalized orders in `customer_orders_sync` while preserving customer data sovereignty.
+   - Fully provisioned, queried, and managed via **Tiger MCP** (`db_query`, `service_list`, `service_get`).
+
+---
+
+## 5. Source Code & Live Links
 
 - **GitHub Repository**: [https://github.com/Shashank-blip/OrderSift](https://github.com/Shashank-blip/OrderSift)
+- **Tiger Service ID**: `i9n4pdf1ga` (Region: `us-east-1`, PostgreSQL 18.6 + `pgvector`)
 - **License**: MIT
+

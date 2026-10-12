@@ -203,7 +203,7 @@ export default function Home() {
           </div>
           <div>
             <h4 className="text-xs font-bold text-stone-900">A useful ledger</h4>
-            <p className="text-xs text-stone-500 mt-1">Saved locally, ready to export.</p>
+            <p className="text-xs text-stone-500 mt-1">Local IndexedDB + Tiger Data pgvector catalog sync.</p>
           </div>
         </div>
       </section>
