@@ -1,7 +1,8 @@
 import Dexie, { type Table } from "dexie";
 import { ParsedOrder } from "@/lib/types/order";
 
-export class OrderSiftDatabase extends Dexie {
+// Safe browser-only IndexedDB helper
+class OrderSiftDatabase extends Dexie {
   orders!: Table<ParsedOrder, string>;
 
   constructor() {
@@ -13,3 +14,4 @@ export class OrderSiftDatabase extends Dexie {
 }
 
 export const db = new OrderSiftDatabase();
+

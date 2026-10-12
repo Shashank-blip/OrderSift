@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 export default function Home() {
+  const [isMounted, setIsMounted] = useState(false);
   const [ollamaStatus, setOllamaStatus] = useState<OllamaHealthStatus | null>(null);
   const [checkingHealth, setCheckingHealth] = useState(true);
   const [isParsing, setIsParsing] = useState(false);
@@ -42,6 +43,7 @@ export default function Home() {
   };
 
   const loadSavedOrders = async () => {
+    if (typeof window === "undefined") return;
     try {
       const allOrders = await db.orders.orderBy("createdAt").reverse().toArray();
       setOrders(allOrders);
@@ -51,9 +53,20 @@ export default function Home() {
   };
 
   useEffect(() => {
+    setIsMounted(true);
     fetchHealth();
     loadSavedOrders();
   }, []);
+
+  if (!isMounted) {
+    return (
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </main>
+    );
+  }
 
   const handleParseMessage = async (text: string) => {
     setIsParsing(true);
