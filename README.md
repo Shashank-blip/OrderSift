@@ -52,6 +52,11 @@ This creates friction, mistakes, and lost revenue. OrderSift helps simplify that
 
 ### Install and run
 
+OrderSift pairs local-first order extraction with **Tiger Data** (TimescaleDB / PostgreSQL with `pgvector` extension) managed through the **Tiger MCP**:
+- **Merchant Catalog Matching (`/api/catalog/match`)**: Uses `pgvector` catalog in Tiger Cloud to match conversational item descriptions (e.g. *"2 boxes fudge buns"*) to official merchant SKUs (`BK-CUP-01: Double Chocolate Fudge Cupcake`) and verify allergen warnings.
+- **Order Synchronization (`/api/orders/sync`)**: Optional cloud sync table (`customer_orders_sync`) for multi-device order views without compromising on local-first privacy.
+- **MCP Database Management**: Seamlessly provisioned and queried via Tiger MCP (`db_query`, `service_list`) with SQL migration scripts in [`scripts/setup-tiger.sql`](scripts/setup-tiger.sql).
+
 ```bash
 npm install
 npm run dev

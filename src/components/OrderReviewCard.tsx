@@ -29,6 +29,58 @@ interface OrderReviewCardProps {
 export function OrderReviewCard({ order: initialOrder, modelUsed, onSaveOrder, onDiscard }: OrderReviewCardProps) {
   const [order, setOrder] = useState<Partial<ParsedOrder>>(initialOrder);
   const [copiedFollowUp, setCopiedFollowUp] = useState(false);
+  const [matchingCatalog, setMatchingCatalog] = useState(false);
+  const [matchedAlert, setMatchedAlert] = useState<string | null>(null);
+
+  const handleMatchWithTigerCatalog = async () => {
+    if (!order.items || order.items.length === 0) return;
+    setMatchingCatalog(true);
+    setMatchedAlert(null);
+    try {
+      const res = await fetch("/api/catalog/match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: order.items.map((i) => i.name)
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        let updatedCount = 0;
+        const newItems = [...(order.items || [])];
+
+        data.results.forEach((matchResult: any, idx: number) => {
+          if (matchResult.matched && newItems[idx]) {
+            updatedCount++;
+            const item = matchResult.matched;
+            newItems[idx] = {
+              ...newItems[idx],
+              name: item.name,
+              unitPrice: item.unit_price,
+              totalPrice: (newItems[idx].quantity || 1) * item.unit_price,
+              notes: item.allergens && item.allergens.length > 0 
+                ? `${newItems[idx].notes ? newItems[idx].notes + " | " : ""}Allergens: ${item.allergens.join(", ")}`
+                : newItems[idx].notes
+            };
+          }
+        });
+
+        const newSubtotal = newItems.reduce((acc, it) => acc + (it.totalPrice || 0), 0);
+        setOrder((prev) => ({
+          ...prev,
+          items: newItems,
+          subtotal: newSubtotal,
+          total: newSubtotal + (Number(prev.deliveryFee) || 0)
+        }));
+
+        setMatchedAlert(`Matched ${updatedCount} item(s) against Tiger Cloud catalog! Prices & allergens updated.`);
+      }
+    } catch (e) {
+      console.error("Tiger catalog match failed:", e);
+    } finally {
+      setMatchingCatalog(false);
+    }
+  };
 
   const updateCustomer = (field: keyof NonNullable<ParsedOrder["customer"]>, value: string) => {
     setOrder((prev) => ({
@@ -296,16 +348,34 @@ export function OrderReviewCard({ order: initialOrder, modelUsed, onSaveOrder, o
 
         {/* Line Items Table */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
             <h3 className="text-sm font-semibold text-slate-900">Extracted Order Items</h3>
-            <button
-              onClick={addItem}
-              className="inline-flex items-center space-x-1 text-xs text-brand-600 hover:text-brand-700 font-medium"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Custom Item</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={handleMatchWithTigerCatalog}
+                disabled={matchingCatalog}
+                className="inline-flex items-center space-x-1.5 text-xs font-semibold px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-md transition"
+                title="Match items with Tiger Cloud merchant catalog via pgvector"
+              >
+                <span>{matchingCatalog ? "Matching..." : "🐯 Match with Tiger Catalog"}</span>
+              </button>
+              <button
+                onClick={addItem}
+                className="inline-flex items-center space-x-1 text-xs text-brand-600 hover:text-brand-700 font-medium"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Custom Item</span>
+              </button>
+            </div>
           </div>
+
+          {matchedAlert && (
+            <div className="mb-3 text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-md flex items-center justify-between">
+              <span>{matchedAlert}</span>
+              <button onClick={() => setMatchedAlert(null)} className="text-emerald-700 hover:text-emerald-950 font-bold ml-2">✕</button>
+            </div>
+          )}
 
           <div className="overflow-x-auto border border-slate-200 rounded-xl">
             <table className="w-full text-left text-sm">

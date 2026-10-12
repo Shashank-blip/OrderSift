@@ -25,6 +25,32 @@ interface OrdersDashboardProps {
 export function OrdersDashboard({ orders, onDeleteOrder, onUpdateStatus }: OrdersDashboardProps) {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [syncingCloud, setSyncingCloud] = useState(false);
+  const [cloudSyncMsg, setCloudSyncMsg] = useState<string | null>(null);
+
+  const handleSyncToTigerCloud = async () => {
+    if (orders.length === 0) return;
+    setSyncingCloud(true);
+    setCloudSyncMsg(null);
+    try {
+      let syncedCount = 0;
+      for (const ord of orders) {
+        const res = await fetch("/api/orders/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order: ord })
+        });
+        if (res.ok) syncedCount++;
+      }
+      setCloudSyncMsg(`Synced ${syncedCount} order(s) to Tiger Cloud (customer_orders_sync)`);
+      setTimeout(() => setCloudSyncMsg(null), 4000);
+    } catch (e) {
+      console.error("Tiger sync error:", e);
+      setCloudSyncMsg("Failed to sync to Tiger Cloud");
+    } finally {
+      setSyncingCloud(false);
+    }
+  };
 
   const filteredOrders = orders.filter((ord) => {
     const matchesStatus = filterStatus === "all" || ord.status === filterStatus;
@@ -87,6 +113,14 @@ export function OrdersDashboard({ orders, onDeleteOrder, onUpdateStatus }: Order
 
         <div className="flex items-center space-x-2">
           <button
+            onClick={handleSyncToTigerCloud}
+            disabled={orders.length === 0 || syncingCloud}
+            className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-md transition disabled:opacity-40"
+            title="Sync orders to Tiger Cloud PostgreSQL table customer_orders_sync"
+          >
+            <span>{syncingCloud ? "Syncing..." : "🐯 Sync to Tiger Cloud"}</span>
+          </button>
+          <button
             onClick={exportToCSV}
             disabled={orders.length === 0}
             className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-2 bg-stone-100 hover:bg-amber-100 text-stone-700 rounded-md transition disabled:opacity-40"
@@ -106,6 +140,13 @@ export function OrdersDashboard({ orders, onDeleteOrder, onUpdateStatus }: Order
       </div>
 
       {/* Filter and Search Bar */}
+      {cloudSyncMsg && (
+        <div className="mb-4 text-xs bg-emerald-50 text-emerald-850 border border-emerald-300 p-2.5 rounded-md flex items-center justify-between font-medium">
+          <span>{cloudSyncMsg}</span>
+          <button onClick={() => setCloudSyncMsg(null)} className="text-emerald-700 hover:text-emerald-950 font-bold ml-2">✕</button>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <input
           type="text"

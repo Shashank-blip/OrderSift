@@ -42,14 +42,15 @@ Closed-source LLM APIs (OpenAI, Anthropic, Google) charge per token and send pri
 
 ## 4. Partner Technology: Best Use of Tiger Data ($100 Track)
 
-OrderSift integrates with **Tiger Cloud (Managed TimescaleDB & PostgreSQL with `pgvector`)** managed directly through **Tiger MCP**:
+OrderSift pairs its local-first extraction pipeline with **Tiger Cloud (Managed TimescaleDB & PostgreSQL with `pgvector`)** provisioned and managed via **Tiger MCP**:
 
-1. **Merchant Menu & Catalog with `pgvector`**:
-   - OrderSift matches fuzzy, colloquial customer names (e.g. *"2 boxes fudge buns"*) against the merchant's official inventory (`BK-CUP-01: Double Chocolate Fudge Cupcake`) using semantic similarity and allergen auditing.
-   - Initialized schema with `CREATE EXTENSION vector;` and table `merchant_catalog (id, item_code, name, category, unit_price, allergens, embedding vector(384))`.
-2. **Cloud Order Sync & Ledger**:
-   - Stores finalized orders in `customer_orders_sync` while preserving customer data sovereignty.
-   - Fully provisioned, queried, and managed via **Tiger MCP** (`db_query`, `service_list`, `service_get`).
+1. **Merchant Menu & Catalog Matching (`/api/catalog/match`)**:
+   - Matches colloquial or abbreviated customer requests (e.g. *"2 boxes fudge buns"*) against the merchant's official Tiger catalog SKU (`BK-CUP-01: Double Chocolate Fudge Cupcake`), auto-filling exact pricing and alerting for allergens (`dairy, eggs, gluten`).
+   - Tiger DDL and migration script available directly in [`scripts/setup-tiger.sql`](scripts/setup-tiger.sql).
+2. **Cloud Order Sync (`/api/orders/sync`)**:
+   - Allows merchants to optionally sync finalized orders from their browser IndexedDB to the Tiger PostgreSQL cloud ledger table `customer_orders_sync` for cross-device reporting.
+3. **Database Management via Tiger MCP**:
+   - Service provisioned, monitored, and queried via Tiger MCP (`service_get`, `db_query`, `service_list`) on service `i9n4pdf1ga`.
 
 ---
 
