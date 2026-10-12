@@ -45,7 +45,7 @@ export function OllamaStatusBadge({ status, loading, onRefresh }: OllamaStatusBa
   return (
     <div className="flex items-center space-x-2 text-xs bg-amber-50 text-amber-900 px-3 py-1.5 rounded-full border border-amber-200 font-medium">
       <Cpu className="w-4 h-4 text-amber-600" />
-      <span>Using Built-in Fast Parser (Ollama offline)</span>
+      <span title={status?.error}>{status?.error || "Using Built-in Fast Parser (Ollama offline)"}</span>
       <button
         onClick={onRefresh}
         title="Check Ollama status"

@@ -41,12 +41,38 @@ export async function checkOllamaHealth(): Promise<OllamaHealthStatus> {
       ? "llama-3.3-70b-versatile" 
       : GROQ_MODEL;
 
-    return {
-      isAvailable: true,
-      provider: "groq",
-      model: displayModel,
-      availableModels: [displayModel, "llama-3.1-8b-instant"]
-    };
+    try {
+      const res = await fetch("https://api.groq.com/openai/v1/models", {
+        headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
+        cache: "no-store",
+        signal: AbortSignal.timeout(4000)
+      });
+      if (!res.ok) {
+        return {
+          isAvailable: false,
+          provider: "groq",
+          model: displayModel,
+          availableModels: [],
+          error: `Groq rejected the API key (HTTP ${res.status})`
+        };
+      }
+      const data = await res.json();
+      const models: string[] = (data.data || []).map((m: { id: string }) => m.id);
+      return {
+        isAvailable: true,
+        provider: "groq",
+        model: displayModel,
+        availableModels: models
+      };
+    } catch (e) {
+      return {
+        isAvailable: false,
+        provider: "groq",
+        model: displayModel,
+        availableModels: [],
+        error: `Groq unreachable: ${e instanceof Error ? e.message : String(e)}`
+      };
+    }
   }
 
   // 2. Check if generic OpenAI-compatible provider is configured
@@ -323,6 +349,9 @@ export async function parseOrderWithOllama(
   rawText: string,
   requestedModel?: string
 ): Promise<{ order: Partial<ParsedOrder>; usedLocalModel: boolean; modelUsed: string }> {
+  const failures: string[] = [];
+  const describe = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 160);
+
   // Strategy 1: Groq Cloud (Free Open-Weight Inference)
   if (GROQ_API_KEY) {
     try {
@@ -334,7 +363,8 @@ export async function parseOrderWithOllama(
         modelUsed: `Groq Cloud (${modelUsed}) [Open-Weight]`
       };
     } catch (e) {
-      console.warn("Groq inference error, attempting next strategy:", e);
+      console.error("Groq inference error:", e);
+      failures.push(`Groq: ${describe(e)}`);
     }
   }
 
@@ -348,7 +378,8 @@ export async function parseOrderWithOllama(
         modelUsed: `${OPENAI_MODEL} (Cloud API)`
       };
     } catch (e) {
-      console.warn("OpenAI-compatible endpoint error:", e);
+      console.error("OpenAI-compatible endpoint error:", e);
+      failures.push(`OpenAI-compatible: ${describe(e)}`);
     }
   }
 
@@ -385,34 +416,44 @@ export async function parseOrderWithOllama(
         modelUsed: `Ollama (${modelToUse})`
       };
     }
-  } catch {
-    // Ollama unreachable, fall back to enhanced heuristic
+    failures.push(`Ollama: HTTP ${res.status}`);
+  } catch (e) {
+    failures.push(`Ollama: ${describe(e)}`);
   }
 
   // Strategy 4: Enhanced Heuristic Parser
   return {
     order: parseOrderHeuristicFallback(rawText),
     usedLocalModel: false,
-    modelUsed: "OrderSift Heuristic Parser (Ollama / Cloud LLM offline)"
+    modelUsed: `Heuristic fallback — ${failures.join(" | ")}`
   };
 }
 
+function toNumber(value: unknown, fallback: number): number {
+  const n = typeof value === "number" ? value : parseFloat(String(value ?? ""));
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
 function formatParsedResult(parsedJson: any): Partial<ParsedOrder> {
-  const items = (parsedJson.items || []).map((it: { name: string; quantity?: number; unitPrice?: number; notes?: string }) => {
-    const qty = it.quantity || 1;
-    const unit = it.unitPrice || 0;
+  if (!parsedJson || typeof parsedJson !== "object") {
+    throw new Error("Model returned a non-object response");
+  }
+  const rawItems = Array.isArray(parsedJson.items) ? parsedJson.items : [];
+  const items = rawItems.map((it: any) => {
+    const qty = toNumber(it?.quantity, 1);
+    const unit = toNumber(it?.unitPrice ?? it?.unit_price ?? it?.price, 0);
     return {
       id: Math.random().toString(36).substring(2, 9),
-      name: it.name,
+      name: String(it?.name ?? "Item"),
       quantity: qty,
       unitPrice: unit,
       totalPrice: qty * unit,
-      notes: it.notes
+      notes: it?.notes ?? undefined
     };
   });
 
   const subtotal = items.reduce((acc: number, it: { totalPrice: number }) => acc + it.totalPrice, 0);
-  const missing = detectMissingFields(parsedJson);
+  const missing = detectMissingFields({ ...parsedJson, customer: parsedJson.customer || {}, items });
 
   return {
     customer: parsedJson.customer || {},

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkOllamaHealth, parseOrderWithOllama } from "@/lib/ai/ollama";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const health = await checkOllamaHealth();
   return NextResponse.json(health);
