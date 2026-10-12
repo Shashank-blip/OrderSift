@@ -9,7 +9,8 @@ export interface OllamaHealthStatus {
   error?: string;
 }
 
-const OLLAMA_HOST = process.env.OLLAMA_HOST || process.env.NEXT_PUBLIC_OLLAMA_HOST || "http://127.0.0.1:11434";
+const rawHost = process.env.OLLAMA_HOST || process.env.NEXT_PUBLIC_OLLAMA_HOST || "http://127.0.0.1:11434";
+const OLLAMA_HOST = rawHost.replace(/\/+$/, "");
 const PREFERRED_MODEL = process.env.OLLAMA_MODEL || process.env.NEXT_PUBLIC_OLLAMA_MODEL || "qwen2.5:latest";
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || "";
 
