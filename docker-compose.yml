@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  ordersift:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ordersift-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - OLLAMA_MODEL=qwen2.5:latest
+      - OLLAMA_API_KEY=${OLLAMA_API_KEY:-}
+      - TIGER_SERVICE_ID=${TIGER_SERVICE_ID:-i9n4pdf1ga}
+      - TIGER_DATABASE_URL=${TIGER_DATABASE_URL:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
