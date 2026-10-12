@@ -15,9 +15,9 @@ const OLLAMA_HOST = rawHost.replace(/\/+$/, "");
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || process.env.NEXT_PUBLIC_OLLAMA_MODEL || "qwen2.5:latest";
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || "";
 
-// Groq configuration (Free open-weight inference: qwen-2.5-32b, llama-3.3-70b-versatile)
+// Groq configuration (Free open-weight inference: llama-3.3-70b-versatile, llama-3.1-8b-instant)
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
-const GROQ_MODEL = process.env.GROQ_MODEL || "qwen-2.5-32b";
+const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
 
 // Generic OpenAI-compatible endpoint (OpenRouter, Together, etc.)
 const OPENAI_BASE_URL = (process.env.OPENAI_BASE_URL || "").replace(/\/+$/, "");
@@ -37,11 +37,15 @@ function getOllamaHeaders(): Record<string, string> {
 export async function checkOllamaHealth(): Promise<OllamaHealthStatus> {
   // 1. Check if Groq Cloud is configured (Highest priority for Vercel/cloud deployment)
   if (GROQ_API_KEY) {
+    const displayModel = GROQ_MODEL.toLowerCase().includes("qwen") 
+      ? "llama-3.3-70b-versatile" 
+      : GROQ_MODEL;
+
     return {
       isAvailable: true,
       provider: "groq",
-      model: GROQ_MODEL,
-      availableModels: [GROQ_MODEL, "llama-3.3-70b-versatile"]
+      model: displayModel,
+      availableModels: [displayModel, "llama-3.1-8b-instant"]
     };
   }
 
@@ -223,35 +227,64 @@ export function parseOrderHeuristicFallback(rawText: string): Partial<ParsedOrde
 }
 
 // Call Groq Cloud (Free Open-Weight Inference)
-async function parseWithGroq(rawText: string, model: string = GROQ_MODEL): Promise<any> {
+async function parseWithGroq(rawText: string, preferredModel: string): Promise<{ parsed: any; modelUsed: string }> {
   const prompt = `Parse this customer order message into structured JSON matching the schema.\nMessage:\n"""\n${rawText}\n"""`;
 
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${GROQ_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: model,
-      messages: [
-        { role: "system", content: `${ORDER_EXTRACTION_SYSTEM_PROMPT}\nReturn ONLY a raw JSON object with keys: customer, items, currency, deliveryDate, deliveryTime, specialInstructions, missingFields, suggestedFollowUp, confidenceScore.` },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.1
-    }),
-    signal: AbortSignal.timeout(20000)
-  });
+  // Filter candidates: prioritize preferred, then robust open-weight models available on Groq
+  const candidates = [
+    preferredModel,
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant"
+  ].filter((v, i, a) => v && !v.toLowerCase().includes("qwen") && a.indexOf(v) === i);
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`Groq API returned HTTP ${res.status}: ${errorText}`);
+  // If preferred was qwen, ensure fallback candidates exist
+  if (candidates.length === 0) {
+    candidates.push("llama-3.3-70b-versatile", "llama-3.1-8b-instant");
   }
 
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content;
-  return typeof content === "string" ? JSON.parse(content) : content;
+  let lastError: any = null;
+
+  for (const modelToTry of candidates) {
+    try {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${GROQ_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: modelToTry,
+          messages: [
+            { 
+              role: "system", 
+              content: `${ORDER_EXTRACTION_SYSTEM_PROMPT}\nReturn ONLY a raw JSON object with keys: customer, items, currency, deliveryDate, deliveryTime, specialInstructions, missingFields, suggestedFollowUp, confidenceScore.` 
+            },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.1
+        }),
+        signal: AbortSignal.timeout(20000)
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.warn(`Groq candidate ${modelToTry} returned HTTP ${res.status}: ${errorText}`);
+        lastError = new Error(`Groq HTTP ${res.status}: ${errorText}`);
+        continue; // Try next candidate
+      }
+
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content;
+      const parsed = typeof content === "string" ? JSON.parse(content) : content;
+      return { parsed, modelUsed: modelToTry };
+    } catch (err) {
+      console.warn(`Groq request failed with model ${modelToTry}:`, err);
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error("All Groq open-weight candidate models failed");
 }
 
 // Call generic OpenAI-compatible provider
@@ -290,15 +323,15 @@ export async function parseOrderWithOllama(
   rawText: string,
   requestedModel?: string
 ): Promise<{ order: Partial<ParsedOrder>; usedLocalModel: boolean; modelUsed: string }> {
-  // Strategy 1: Groq Cloud (Free Open-Weight Qwen 2.5 32B)
+  // Strategy 1: Groq Cloud (Free Open-Weight Inference)
   if (GROQ_API_KEY) {
     try {
-      const model = requestedModel && requestedModel.includes("qwen") ? requestedModel : GROQ_MODEL;
-      const parsedJson = await parseWithGroq(rawText, model);
+      const preferred = requestedModel || GROQ_MODEL;
+      const { parsed, modelUsed } = await parseWithGroq(rawText, preferred);
       return {
-        order: formatParsedResult(parsedJson),
+        order: formatParsedResult(parsed),
         usedLocalModel: true,
-        modelUsed: `Groq Cloud (${model}) [Open-Weight]`
+        modelUsed: `Groq Cloud (${modelUsed}) [Open-Weight]`
       };
     } catch (e) {
       console.warn("Groq inference error, attempting next strategy:", e);
