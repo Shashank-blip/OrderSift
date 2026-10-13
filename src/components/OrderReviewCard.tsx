@@ -55,9 +55,15 @@ export function OrderReviewCard({ order: initialOrder, modelUsed, onSaveOrder, o
         updatedCount++;
         const item = matchResult.matched;
         const allergenNote = item.allergens?.length ? `Allergens: ${item.allergens.join(", ")}` : "";
-        const notes = allergenNote && !(existing.notes || "").includes("Allergens:")
-          ? [existing.notes, allergenNote].filter(Boolean).join(" | ")
-          : existing.notes;
+        const customerWording =
+          existing.name && existing.name.toLowerCase() !== item.name.toLowerCase() && !(existing.notes || "").includes(existing.name)
+            ? `Requested: ${existing.name}`
+            : "";
+        const notes = [
+          customerWording,
+          existing.notes,
+          allergenNote && !(existing.notes || "").includes("Allergens:") ? allergenNote : ""
+        ].filter(Boolean).join(" | ");
         newItems[idx] = {
           ...existing,
           name: item.name,

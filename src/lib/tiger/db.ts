@@ -12,9 +12,13 @@ export function getTigerPool(): Pool {
     throw new Error("TIGER_DATABASE_URL is not set");
   }
   if (!globalForPg.tigerPool) {
+    const url = new URL(process.env.TIGER_DATABASE_URL);
+    url.searchParams.delete("sslmode");
+    const ca = process.env.TIGER_CA_CERT?.replace(/\\n/g, "\n");
     globalForPg.tigerPool = new Pool({
-      connectionString: process.env.TIGER_DATABASE_URL,
-      ssl: { rejectUnauthorized: true },
+      connectionString: url.toString(),
+      // Matches libpq sslmode=require (encrypted, unverified) unless a CA is provided for verify-full.
+      ssl: ca ? { ca, rejectUnauthorized: true } : { rejectUnauthorized: false },
       max: 3,
       idleTimeoutMillis: 10_000,
       connectionTimeoutMillis: 5_000
