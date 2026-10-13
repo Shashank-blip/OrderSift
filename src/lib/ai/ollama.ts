@@ -42,27 +42,22 @@ export async function checkOllamaHealth(): Promise<OllamaHealthStatus> {
       : GROQ_MODEL;
 
     try {
-      const res = await fetch("https://api.groq.com/openai/v1/models", {
-        headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
-        cache: "no-store",
-        signal: AbortSignal.timeout(4000)
-      });
-      if (!res.ok) {
+      await listGroqModels();
+      const candidates = await resolveGroqCandidates(displayModel);
+      if (candidates.length === 0) {
         return {
           isAvailable: false,
           provider: "groq",
           model: displayModel,
           availableModels: [],
-          error: `Groq rejected the API key (HTTP ${res.status})`
+          error: "Groq key has no chat models available"
         };
       }
-      const data = await res.json();
-      const models: string[] = (data.data || []).map((m: { id: string }) => m.id);
       return {
         isAvailable: true,
         provider: "groq",
-        model: displayModel,
-        availableModels: models
+        model: candidates[0],
+        availableModels: candidates
       };
     } catch (e) {
       return {
@@ -256,19 +251,8 @@ export function parseOrderHeuristicFallback(rawText: string): Partial<ParsedOrde
 async function parseWithGroq(rawText: string, preferredModel: string): Promise<{ parsed: any; modelUsed: string }> {
   const prompt = `Parse this customer order message into structured JSON matching the schema.\nMessage:\n"""\n${rawText}\n"""`;
 
-  // Filter candidates: prioritize preferred, then robust open-weight models available on Groq
-  const candidates = [
-    preferredModel,
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant"
-  ].filter((v, i, a) => v && !v.toLowerCase().includes("qwen") && a.indexOf(v) === i);
-
-  // If preferred was qwen, ensure fallback candidates exist
-  if (candidates.length === 0) {
-    candidates.push("llama-3.3-70b-versatile", "llama-3.1-8b-instant");
-  }
-
-  let lastError: any = null;
+  const candidates = await resolveGroqCandidates(preferredModel);
+  const errors: string[] = [];
 
   for (const modelToTry of candidates) {
     try {
@@ -296,21 +280,79 @@ async function parseWithGroq(rawText: string, preferredModel: string): Promise<{
       if (!res.ok) {
         const errorText = await res.text();
         console.warn(`Groq candidate ${modelToTry} returned HTTP ${res.status}: ${errorText}`);
-        lastError = new Error(`Groq HTTP ${res.status}: ${errorText}`);
-        continue; // Try next candidate
+        errors.push(`${modelToTry} HTTP ${res.status}`);
+        if (res.status === 401) break;
+        continue;
       }
 
       const data = await res.json();
       const content = data.choices?.[0]?.message?.content;
-      const parsed = typeof content === "string" ? JSON.parse(content) : content;
+      const parsed = typeof content === "string" ? JSON.parse(stripCodeFences(content)) : content;
       return { parsed, modelUsed: modelToTry };
     } catch (err) {
       console.warn(`Groq request failed with model ${modelToTry}:`, err);
-      lastError = err;
+      errors.push(`${modelToTry}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
-  throw lastError || new Error("All Groq open-weight candidate models failed");
+  throw new Error(`Groq failed (${errors.join("; ") || "no candidate models"})`);
+}
+
+const GROQ_PREFERRED_MODELS = [
+  "llama-3.3-70b-versatile",
+  "openai/gpt-oss-120b",
+  "openai/gpt-oss-20b",
+  "meta-llama/llama-4-maverick-17b-128e-instruct",
+  "meta-llama/llama-4-scout-17b-16e-instruct",
+  "moonshotai/kimi-k2-instruct",
+  "llama-3.1-8b-instant"
+];
+
+const NON_CHAT_MODEL = /whisper|tts|guard|playai|orpheus|compound|safeguard|distil/i;
+
+let groqModelCache: { models: string[]; fetchedAt: number } | null = null;
+
+export async function listGroqModels(): Promise<string[]> {
+  if (groqModelCache && Date.now() - groqModelCache.fetchedAt < 10 * 60 * 1000) {
+    return groqModelCache.models;
+  }
+  const res = await fetch("https://api.groq.com/openai/v1/models", {
+    headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
+    cache: "no-store",
+    signal: AbortSignal.timeout(5000)
+  });
+  if (!res.ok) {
+    throw new Error(`Groq models HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  const models: string[] = (data.data || [])
+    .filter((m: { id: string; active?: boolean }) => m.active !== false && !NON_CHAT_MODEL.test(m.id))
+    .map((m: { id: string }) => m.id);
+  groqModelCache = { models, fetchedAt: Date.now() };
+  return models;
+}
+
+async function resolveGroqCandidates(preferredModel?: string): Promise<string[]> {
+  let available: string[] = [];
+  try {
+    available = await listGroqModels();
+  } catch (e) {
+    console.warn("Could not list Groq models, using static candidates:", e);
+    return [preferredModel, ...GROQ_PREFERRED_MODELS].filter(
+      (v, i, a): v is string => !!v && a.indexOf(v) === i
+    );
+  }
+  const ordered = [
+    preferredModel,
+    GROQ_MODEL,
+    ...GROQ_PREFERRED_MODELS,
+    ...available
+  ].filter((v, i, a): v is string => !!v && available.includes(v) && a.indexOf(v) === i);
+  return ordered.slice(0, 4);
+}
+
+function stripCodeFences(text: string): string {
+  return text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
 }
 
 // Call generic OpenAI-compatible provider
