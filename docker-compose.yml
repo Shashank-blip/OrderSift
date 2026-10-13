@@ -14,7 +14,7 @@ services:
       - OLLAMA_HOST=http://host.docker.internal:11434
       - OLLAMA_MODEL=qwen2.5:latest
       - OLLAMA_API_KEY=${OLLAMA_API_KEY:-}
-      - TIGER_SERVICE_ID=${TIGER_SERVICE_ID:-i9n4pdf1ga}
+      - TIGER_SERVICE_ID=${TIGER_SERVICE_ID:-lp1tbu4c9d}
       - TIGER_DATABASE_URL=${TIGER_DATABASE_URL:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"

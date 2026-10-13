@@ -1,5 +1,5 @@
 -- Tiger Data (TimescaleDB / PostgreSQL) Schema for OrderSift
--- Managed via Tiger MCP on service i9n4pdf1ga
+-- Managed via Tiger MCP on service lp1tbu4c9d (ordersift)
 
 -- 1. Enable pgvector for semantic catalog search
 CREATE EXTENSION IF NOT EXISTS vector;
