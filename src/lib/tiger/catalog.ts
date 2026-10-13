@@ -19,6 +19,14 @@ export const DEFAULT_CATALOG: CatalogItem[] = [
     allergens: ["dairy", "eggs", "gluten"],
   },
   {
+    item_code: "BK-CUP-06",
+    name: "Chocolate Fudge Cupcake Box (6 pack)",
+    category: "Bakery",
+    unit_price: 19.0,
+    description: "Box of six double chocolate fudge cupcakes",
+    allergens: ["dairy", "eggs", "gluten"],
+  },
+  {
     item_code: "BK-CUP-02",
     name: "Red Velvet Birthday Cake (8-inch)",
     category: "Bakery",
@@ -60,24 +68,39 @@ export const DEFAULT_CATALOG: CatalogItem[] = [
   },
 ];
 
+function stem(word: string): string {
+  if (/(x|z|ch|sh|ss)es$/.test(word)) return word.slice(0, -2);
+  if (/[^s]s$/.test(word)) return word.slice(0, -1);
+  return word;
+}
+
+function tokens(text: string): string[] {
+  return text
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length > 2)
+    .map(stem);
+}
+
 export function findMatchingCatalogItem(query: string, catalog: CatalogItem[] = DEFAULT_CATALOG): { item: CatalogItem; confidence: number } | null {
   const q = query.toLowerCase().trim();
   if (!q) return null;
+  const qWords = tokens(q);
 
   let bestMatch: CatalogItem | null = null;
   let highestScore = 0;
 
   for (const item of catalog) {
     const nameLower = item.name.toLowerCase();
-    const descLower = item.description.toLowerCase();
+    const nameWords = tokens(item.name);
+    const descWords = tokens(item.description);
     let score = 0;
 
     if (nameLower === q) score += 100;
-    else if (nameLower.includes(q)) score += 70;
     else {
-      const qWords = q.split(/\s+/);
-      const matchedWords = qWords.filter(w => w.length > 2 && (nameLower.includes(w) || descLower.includes(w)));
-      score += (matchedWords.length / Math.max(qWords.length, 1)) * 60;
+      const nameHits = qWords.filter((w) => nameWords.includes(w)).length;
+      const descHits = qWords.filter((w) => !nameWords.includes(w) && descWords.includes(w)).length;
+      score += ((nameHits + descHits * 0.5) / Math.max(qWords.length, 1)) * 90;
     }
 
     if (score > highestScore && score >= 30) {

@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS customer_orders_sync (
 INSERT INTO merchant_catalog (item_code, name, category, unit_price, description, allergens)
 VALUES 
   ('BK-CUP-01', 'Double Chocolate Fudge Cupcake', 'Bakery', 3.50, 'Rich dark cocoa cupcake with molten chocolate fudge frosting', ARRAY['dairy', 'eggs', 'gluten']),
+  ('BK-CUP-06', 'Chocolate Fudge Cupcake Box (6 pack)', 'Bakery', 19.00, 'Box of six double chocolate fudge cupcakes', ARRAY['dairy', 'eggs', 'gluten']),
   ('BK-CUP-02', 'Red Velvet Birthday Cake (8-inch)', 'Bakery', 45.00, 'Classic velvet crumb layered with vanilla cream cheese frosting and gold accents', ARRAY['dairy', 'eggs', 'gluten']),
   ('CAT-PAN-01', 'Grilled Tuscan Chicken Sourdough Panini', 'Catering', 12.50, 'Marinated free-range grilled chicken with sundried tomatoes and pesto on sourdough', ARRAY['dairy', 'gluten']),
   ('CAT-WRP-01', 'Avocado & Herb Roasted Vegetable Wrap (Vegan)', 'Catering', 11.00, 'Hass avocado, roasted bell peppers, hummus, and baby greens wrapped in spinach tortilla', ARRAY['sesame']),

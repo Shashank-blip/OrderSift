@@ -88,6 +88,7 @@ export default function Home() {
       const data = await res.json();
       setActiveDraft({
         ...data.order,
+        id: Math.random().toString(36).substring(2, 11),
         sourceText: text
       });
       setModelUsed(data.modelUsed);
@@ -225,6 +226,7 @@ export default function Home() {
       {activeDraft && (
         <section>
           <OrderReviewCard
+            key={activeDraft.id}
             order={activeDraft}
             modelUsed={modelUsed}
             onSaveOrder={handleSaveOrder}

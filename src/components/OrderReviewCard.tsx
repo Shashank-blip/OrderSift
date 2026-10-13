@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Check,
   AlertTriangle,
@@ -27,8 +27,11 @@ export function OrderReviewCard({ order: initialOrder, modelUsed, onSaveOrder, o
   const [matchingCatalog, setMatchingCatalog] = useState(false);
   const [matchedAlert, setMatchedAlert] = useState<string | null>(null);
 
-  const handleMatchWithTigerCatalog = async () => {
-    if (!order.items || order.items.length === 0) return;
+  const autoMatchedRef = useRef(false);
+
+  const handleMatchWithTigerCatalog = async (onlyUnpriced = false) => {
+    const currentItems = order.items || [];
+    if (currentItems.length === 0) return;
     setMatchingCatalog(true);
     setMatchedAlert(null);
     try {
@@ -36,39 +39,43 @@ export function OrderReviewCard({ order: initialOrder, modelUsed, onSaveOrder, o
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: order.items.map((i) => i.name)
+          items: currentItems.map((i) =>
+            /\b(box|boxes|pack|dozen)\b/i.test(i.notes || "") ? `${i.name} ${i.notes}` : i.name
+          )
         })
       });
-      if (res.ok) {
-        const data = await res.json();
-        let updatedCount = 0;
-        const newItems = [...(order.items || [])];
+      if (!res.ok) return;
+      const data = await res.json();
+      let updatedCount = 0;
+      const newItems = [...currentItems];
+      data.results.forEach((matchResult: any, idx: number) => {
+        const existing = newItems[idx];
+        if (!matchResult.matched || !existing) return;
+        if (onlyUnpriced && (existing.unitPrice || 0) > 0) return;
+        updatedCount++;
+        const item = matchResult.matched;
+        const allergenNote = item.allergens?.length ? `Allergens: ${item.allergens.join(", ")}` : "";
+        const notes = allergenNote && !(existing.notes || "").includes("Allergens:")
+          ? [existing.notes, allergenNote].filter(Boolean).join(" | ")
+          : existing.notes;
+        newItems[idx] = {
+          ...existing,
+          name: item.name,
+          unitPrice: item.unit_price,
+          totalPrice: (existing.quantity || 1) * item.unit_price,
+          notes
+        };
+      });
+      const newSubtotal = newItems.reduce((acc, it) => acc + (it.totalPrice || 0), 0);
+      setOrder((prev) => ({
+        ...prev,
+        items: newItems,
+        subtotal: newSubtotal,
+        total: newSubtotal + (Number(prev.deliveryFee) || 0)
+      }));
 
-        data.results.forEach((matchResult: any, idx: number) => {
-          if (matchResult.matched && newItems[idx]) {
-            updatedCount++;
-            const item = matchResult.matched;
-            newItems[idx] = {
-              ...newItems[idx],
-              name: item.name,
-              unitPrice: item.unit_price,
-              totalPrice: (newItems[idx].quantity || 1) * item.unit_price,
-              notes: item.allergens && item.allergens.length > 0 
-                ? `${newItems[idx].notes ? newItems[idx].notes + " | " : ""}Allergens: ${item.allergens.join(", ")}`
-                : newItems[idx].notes
-            };
-          }
-        });
-
-        const newSubtotal = newItems.reduce((acc, it) => acc + (it.totalPrice || 0), 0);
-        setOrder((prev) => ({
-          ...prev,
-          items: newItems,
-          subtotal: newSubtotal,
-          total: newSubtotal + (Number(prev.deliveryFee) || 0)
-        }));
-
-        setMatchedAlert(`Matched ${updatedCount} item(s) against Tiger Cloud catalog! Prices & allergens updated.`);
+      if (updatedCount > 0) {
+        setMatchedAlert(`Priced ${updatedCount} item(s) from the Tiger Cloud catalog. Review before saving.`);
       }
     } catch (e) {
       console.error("Tiger catalog match failed:", e);
@@ -76,6 +83,15 @@ export function OrderReviewCard({ order: initialOrder, modelUsed, onSaveOrder, o
       setMatchingCatalog(false);
     }
   };
+
+  useEffect(() => {
+    if (autoMatchedRef.current) return;
+    autoMatchedRef.current = true;
+    if ((initialOrder.items || []).some((i) => !i.unitPrice)) {
+      handleMatchWithTigerCatalog(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const updateCustomer = (field: keyof NonNullable<ParsedOrder["customer"]>, value: string) => {
     setOrder((prev) => ({
@@ -348,7 +364,7 @@ export function OrderReviewCard({ order: initialOrder, modelUsed, onSaveOrder, o
             <div className="flex items-center space-x-2">
               <button
                 type="button"
-                onClick={handleMatchWithTigerCatalog}
+                onClick={() => handleMatchWithTigerCatalog()}
                 disabled={matchingCatalog}
                 className="inline-flex items-center space-x-1.5 text-xs font-semibold px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-md transition"
                 title="Match items with Tiger Cloud merchant catalog via pgvector"
@@ -416,7 +432,9 @@ export function OrderReviewCard({ order: initialOrder, modelUsed, onSaveOrder, o
                         <input
                           type="number"
                           step="0.01"
-                          value={item.unitPrice || 0}
+                          min="0"
+                          value={item.unitPrice || ""}
+                          placeholder="0.00"
                           onChange={(e) => updateItem(idx, "unitPrice", Number(e.target.value))}
                           className="w-20 py-1 px-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
                         />
@@ -452,7 +470,9 @@ export function OrderReviewCard({ order: initialOrder, modelUsed, onSaveOrder, o
                   <span className="text-slate-400">$</span>
                   <input
                     type="number"
-                    value={order.deliveryFee || 0}
+                    min="0"
+                    value={order.deliveryFee || ""}
+                    placeholder="0"
                     onChange={(e) => {
                       const fee = Number(e.target.value) || 0;
                       setOrder({
