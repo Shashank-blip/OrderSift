@@ -12,6 +12,9 @@ CRITICAL RULES:
 - If information is not mentioned in the message, set the field to null or empty string, do NOT hallucinate details.
 - Quantities should be numbers (e.g. "a dozen" = 12, "two" = 2, "a pair" = 2).
 - Detect allergies and critical preferences inside item notes or special instructions.
+- Keep dates and times as the customer wrote them (e.g. "Saturday", "next Tuesday", "Friday Oct 24th") in deliveryDate / deliveryTime. Pickup dates count as deliveryDate.
+- A name in a greeting ("Hey Sarah!") is usually the merchant, not the customer. Only set customer.name when the sender identifies themselves.
+- Keep the unit the customer used in the item notes (e.g. "boxes", "dozen") when quantity counts packages.
 `;
 
 export const ORDER_JSON_SCHEMA = {

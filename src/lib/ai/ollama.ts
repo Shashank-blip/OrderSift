@@ -267,7 +267,7 @@ async function parseWithGroq(rawText: string, preferredModel: string): Promise<{
           messages: [
             { 
               role: "system", 
-              content: `${ORDER_EXTRACTION_SYSTEM_PROMPT}\nReturn ONLY a raw JSON object with keys: customer, items, currency, deliveryDate, deliveryTime, specialInstructions, missingFields, suggestedFollowUp, confidenceScore.` 
+              content: `${ORDER_EXTRACTION_SYSTEM_PROMPT}\nReturn ONLY a raw JSON object matching this JSON Schema:\n${JSON.stringify(ORDER_JSON_SCHEMA)}` 
             },
             { role: "user", content: prompt }
           ],
