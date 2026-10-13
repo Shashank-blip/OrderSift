@@ -28,16 +28,25 @@ export function OrdersDashboard({ orders, onDeleteOrder, onUpdateStatus }: Order
     setCloudSyncMsg(null);
     try {
       let syncedCount = 0;
+      let lastError: string | null = null;
       for (const ord of orders) {
         const res = await fetch("/api/orders/sync", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ order: ord })
         });
-        if (res.ok) syncedCount++;
+        if (res.ok) {
+          syncedCount++;
+        } else {
+          lastError = (await res.json().catch(() => null))?.error || `HTTP ${res.status}`;
+        }
       }
-      setCloudSyncMsg(`Synced ${syncedCount} order(s) to Tiger Cloud (customer_orders_sync)`);
-      setTimeout(() => setCloudSyncMsg(null), 4000);
+      setCloudSyncMsg(
+        lastError
+          ? `Synced ${syncedCount}/${orders.length} order(s). Error: ${lastError}`
+          : `Synced ${syncedCount} order(s) to Tiger Cloud (customer_orders_sync)`
+      );
+      setTimeout(() => setCloudSyncMsg(null), lastError ? 8000 : 4000);
     } catch (e) {
       console.error("Tiger sync error:", e);
       setCloudSyncMsg("Failed to sync to Tiger Cloud");

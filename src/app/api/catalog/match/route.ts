@@ -1,39 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DEFAULT_CATALOG, findMatchingCatalogItem } from "@/lib/tiger/catalog";
+import { CatalogItem, DEFAULT_CATALOG, findMatchingCatalogItem } from "@/lib/tiger/catalog";
+import { fetchTigerCatalog, isTigerConfigured } from "@/lib/tiger/db";
+
+export const dynamic = "force-dynamic";
+
+async function loadCatalog(): Promise<{ catalog: CatalogItem[]; source: "tiger-cloud" | "built-in"; error?: string }> {
+  if (!isTigerConfigured()) {
+    return { catalog: DEFAULT_CATALOG, source: "built-in", error: "TIGER_DATABASE_URL is not set" };
+  }
+  try {
+    return { catalog: await fetchTigerCatalog(), source: "tiger-cloud" };
+  } catch (e) {
+    console.error("Tiger catalog query failed, using built-in catalog:", e);
+    return {
+      catalog: DEFAULT_CATALOG,
+      source: "built-in",
+      error: e instanceof Error ? e.message : String(e)
+    };
+  }
+}
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const query = searchParams.get("q");
+  const query = new URL(req.url).searchParams.get("q");
+  const { catalog, source, error } = await loadCatalog();
 
-  // In production with live database credentials (or fallback default catalog)
   if (!query) {
-    return NextResponse.json({
-      catalog: DEFAULT_CATALOG,
-      source: process.env.TIGER_DATABASE_URL ? "tiger-cloud" : "local-catalog",
-      service_id: "i9n4pdf1ga"
-    });
+    return NextResponse.json({ catalog, source, error });
   }
 
-  const match = findMatchingCatalogItem(query, DEFAULT_CATALOG);
   return NextResponse.json({
     query,
-    match,
-    service_id: "i9n4pdf1ga",
-    source: process.env.TIGER_DATABASE_URL ? "tiger-cloud" : "local-catalog"
+    match: findMatchingCatalogItem(query, catalog),
+    source,
+    error
   });
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { items } = body;
+    const { items } = await req.json();
 
     if (!Array.isArray(items)) {
       return NextResponse.json({ error: "items array is required" }, { status: 400 });
     }
 
-    const matches = items.map((itemName: string) => {
-      const result = findMatchingCatalogItem(itemName, DEFAULT_CATALOG);
+    const { catalog, source, error } = await loadCatalog();
+    const results = items.map((itemName: string) => {
+      const result = findMatchingCatalogItem(itemName, catalog);
       return {
         query: itemName,
         matched: result?.item || null,
@@ -41,10 +54,7 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({
-      results: matches,
-      service_id: "i9n4pdf1ga"
-    });
+    return NextResponse.json({ results, source, error });
   } catch (error) {
     console.error("Catalog match failed:", error);
     return NextResponse.json({ error: "Failed to match catalog items" }, { status: 500 });

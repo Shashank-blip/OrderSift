@@ -75,7 +75,11 @@ export function OrderReviewCard({ order: initialOrder, modelUsed, onSaveOrder, o
       }));
 
       if (updatedCount > 0) {
-        setMatchedAlert(`Priced ${updatedCount} item(s) from the Tiger Cloud catalog. Review before saving.`);
+        setMatchedAlert(
+          data.source === "tiger-cloud"
+            ? `Priced ${updatedCount} item(s) from your Tiger Cloud catalog. Review before saving.`
+            : `Priced ${updatedCount} item(s) from the built-in catalog (Tiger Cloud unavailable: ${data.error}).`
+        );
       }
     } catch (e) {
       console.error("Tiger catalog match failed:", e);

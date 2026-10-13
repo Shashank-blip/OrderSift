@@ -58,7 +58,12 @@ The model's output then goes through a normalizing step (prices or quantities th
 
 **4. Local-first storage.** Saved orders live in the browser's IndexedDB via Dexie. There's no account and no server-side order database by default; the merchant's ledger is on their device and exports to CSV/JSON.
 
-**5. Tiger Data.** I used the Tiger MCP server from my editor to provision a Tiger Cloud service (PostgreSQL + TimescaleDB + pgvector). It holds the schema in [`scripts/setup-tiger.sql`](https://github.com/Shashank-blip/OrderSift/blob/main/scripts/setup-tiger.sql): a `merchant_catalog` table with a `vector(384)` embedding column for semantic matching, and a `customer_orders_sync` table for opt-in cross-device order sync.
+**5. Tiger Data as the merchant's back office.** The catalog and the cloud ledger live in a Tiger Cloud service (PostgreSQL + TimescaleDB). I built it entirely from my editor through the Tiger MCP server, without opening a dashboard: create the service, apply [`scripts/setup-tiger.sql`](https://github.com/Shashank-blip/OrderSift/blob/main/scripts/setup-tiger.sql), seed products, and inspect rows while debugging. When I realized "2 boxes of cupcakes" was being priced as two single cupcakes, adding the 6-pack SKU was one `db_query` call. At runtime, the app talks to Tiger directly through `pg`:
+
+- **Catalog matching** reads `merchant_catalog` live, so a merchant changes a price in one place and the next parsed order uses it. If the database is unreachable, the app falls back to a built-in catalog and says so in the UI.
+- **"Sync to Tiger Cloud"** upserts confirmed orders from the browser into `customer_orders_sync`, keyed by order number. The local ledger stays the source of truth on the device, and Tiger gives the merchant a copy they can query, back up, or open on a second device.
+
+The catalog table already has a `vector(384)` column. The next step is filling it with embeddings so matching works on meaning ("fudge buns" → cupcakes), not just keywords.
 
 **6. Deployment.** One Dockerfile (multi-stage, standalone Next.js output, non-root user) plus a `docker-compose.yml` that points at Ollama on the host, so a merchant can self-host the whole thing. The public demo runs on Vercel.
 
