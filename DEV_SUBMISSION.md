@@ -1,62 +1,83 @@
-# OrderSift — DEV "Side Hustle" Challenge Submission
+*This is a submission for the [Hacktoberfest Open-Source AI Challenge Week 2: Side Hustle](https://dev.to/challenges/hacktoberfest-week2-2026-10-12)*
 
-> **From messy messages to orders you can act on.**  
-> Local-first, privacy-preserving order extraction engine powered by open-weight AI (Ollama + Qwen 2.5 Instruct) and IndexedDB.
+## What I Built
 
----
+**OrderSift turns messy customer messages into orders you can actually act on.**
 
-## 1. What I Built
+If you run a small food or craft business, your "order system" is probably your phone. Orders arrive as WhatsApp messages, Instagram DMs, texts, and emails, and every one is written differently. Here's a real-looking one:
 
-**OrderSift** is an offline-ready, privacy-first order extraction app designed for solo entrepreneurs, home bakers, caterers, and craft sellers who receive messy orders scattered across WhatsApp, Instagram DMs, SMS, and emails.
+> Hey Sarah! Can I please get 2 boxes of chocolate fudge cupcakes and 1 red velvet birthday cake with "Happy 30th Dave" written in gold? My nephew has a severe peanut allergy so please make sure completely nut free! We will pick it up on Saturday around 2pm. Call my mobile 555-0199 when ready.
 
-Instead of paying recurring subscription fees or leaking sensitive customer names, addresses, and phone numbers to closed cloud LLMs, OrderSift extracts structured order data **100% locally** using the open-weight **Qwen 2.5 Instruct** model via **Ollama**, and stores orders client-side using **IndexedDB**.
+A baker reading that has to pull out the items, the inscription, the pickup time, the phone number, and (most importantly) the allergy. Then they have to notice what *isn't* there: the customer never said their name. Miss one detail and you've baked the wrong cake, or worse.
 
-### Key Capabilities:
-- **Instant Unstructured Message Parsing**: Takes raw, messy customer chat text (e.g. *"2 boxes cupcakes for Saturday 2pm, call 555-0199, peanut allergy!"*) and parses items, quantities, prices, delivery schedules, and notes.
-- **Deterministic Missing-Field Detection**: Runs Zod schema validation to instantly spot missing contact info, delivery dates, or fulfillment preferences.
-- **1-Click Customer Clarification**: Automatically writes a polite WhatsApp/DM message ready to copy & paste back to the customer to clarify missing details.
-- **Local Ledger & Export**: Full order status tracking (Draft, Confirmed, Preparing, Ready, Delivered) with 1-click **CSV** and **JSON** exports for spreadsheets and accounting.
+You paste the message into OrderSift and get back an editable order card:
 
----
+- **Line items** with quantities and customizations ("with 'Happy 30th Dave' written in gold").
+- **Pickup date, time, and phone**, pulled out of the prose.
+- **Allergy warnings** surfaced in special instructions, so they can't hide in the middle of a paragraph.
+- **Prices filled in automatically** from the merchant's catalog. "2 boxes of chocolate fudge cupcakes" matches the 6-pack box SKU, not the single cupcake.
+- **A missing-details check** that flags what you still need (here, the customer's name) and writes a polite follow-up message you can copy straight back into the chat.
+- **A local order ledger** with statuses (draft, confirmed, preparing, ready, delivered) and CSV/JSON export for your spreadsheet or accountant.
 
-## 2. Why Open Innovation Matters for OrderSift
+**Who would pay for it?** Home bakers, caterers, custom-apparel sellers, and anyone else taking orders through chat apps. They have too many orders to keep in their head, but they're too small for a POS system or Shopify, and they don't want to make customers fill out a form. The time saved is easy to measure: every order that comes in as a message gets typed up by someone. The cost of a mistake is even easier: one missed allergy note costs more than a year of a small subscription.
 
-Closed-source LLM APIs (OpenAI, Anthropic, Google) charge per token and send private data to external servers. For micro-businesses and side hustles:
+## Demo
 
-1. **Zero Marginal Inference Cost**: A home baker or freelance caterer processing 200 message inquiries a month incurs **$0 in API bills**. The open-weight model runs directly on their laptop or desktop.
-2. **Ironclad Customer Privacy by Design**: Customer PII—names, phone numbers, home delivery addresses, and dietary allergies—**never leaves the merchant's machine**. In a world of increasing data leaks, privacy is a major selling point.
-3. **Offline & Resilient**: At farmer's markets, weekend craft fairs, or pop-up shops with spotty cellular reception, OrderSift works completely offline.
-4. **No API Rate Limits or Vendor Lock-in**: The open-weight weights (`qwen2.5:latest`, `qwen2.5:3b`, etc.) are open-source and customizable.
+**Live app:** https://order-sift.vercel.app
 
----
+Try one of the built-in sample messages (bakery, catering inquiry, custom hoodies) or paste your own. The badge at the top shows which model is serving the request.
 
-## 3. Tech Stack
+<!-- Add 2–3 screenshots here: the input box, the parsed bakery order card with prices filled in, and the ledger. -->
 
-- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS, Lucide Icons
-- **AI Inference Engine**: Ollama running `qwen2.5` with strict JSON Schema output enforcement
-- **Fallback Engine**: Local regex-based heuristic extractor when Ollama is offline
-- **Database**: IndexedDB via Dexie.js for client-side local persistence
-- **Validation**: Zod schema validation
+## Code
 
----
+{% embed https://github.com/Shashank-blip/OrderSift %}
 
-## 4. Partner Technology: Best Use of Tiger Data ($100 Track)
+## How I Built It
 
-OrderSift pairs its local-first extraction pipeline with **Tiger Cloud (Managed TimescaleDB & PostgreSQL with `pgvector`)** provisioned and managed via **Tiger MCP**:
+OrderSift is a Next.js 14 (App Router) + TypeScript app. The AI part is deliberately small and swappable:
 
-1. **Merchant Menu & Catalog Matching (`/api/catalog/match`)**:
-   - Matches colloquial or abbreviated customer requests (e.g. *"2 boxes fudge buns"*) against the merchant's official Tiger catalog SKU (`BK-CUP-01: Double Chocolate Fudge Cupcake`), auto-filling exact pricing and alerting for allergens (`dairy, eggs, gluten`).
-   - Tiger DDL and migration script available directly in [`scripts/setup-tiger.sql`](scripts/setup-tiger.sql).
-2. **Cloud Order Sync (`/api/orders/sync`)**:
-   - Allows merchants to optionally sync finalized orders from their browser IndexedDB to the Tiger PostgreSQL cloud ledger table `customer_orders_sync` for cross-device reporting.
-3. **Database Management via Tiger MCP**:
-   - Service provisioned, monitored, and queried via Tiger MCP (`service_get`, `db_query`, `service_list`) on service `i9n4pdf1ga`.
+**1. Open-weight models only.** Extraction runs on open-weight models through a provider chain, all on the server:
 
----
+- **Groq** serving **`openai/gpt-oss-120b`** (Apache 2.0) for the hosted demo. Groq is fast enough that parsing feels instant, which matters when you have twenty DMs to get through.
+- **Any OpenAI-compatible endpoint** (Together, OpenRouter, a self-hosted vLLM box), configured by environment variable.
+- **Ollama** for fully local inference, e.g. `qwen2.5` or `gpt-oss:20b` on the merchant's own laptop. Ollama's `format` parameter takes a JSON schema, so the model is constrained to valid output.
+- **A rule-based fallback parser** so the app still produces a rough draft when no model is reachable. It's clearly labeled as a fallback, because a draft with gaps is more honest than a confident guess.
 
-## 5. Source Code & Live Links
+The app doesn't hard-code which Groq models exist. It asks Groq which models the API key can use and picks the best available one from a preference list. I learned this the hard way: my first deploy kept silently falling back to the rule-based parser because a hard-coded model ID had been retired. Now any fallback shows its reason right in the UI (`Heuristic fallback — Groq: HTTP 404 ...`), which turned an hour of guessing into a one-line fix.
 
-- **GitHub Repository**: [https://github.com/Shashank-blip/OrderSift](https://github.com/Shashank-blip/OrderSift)
-- **Tiger Service ID**: `i9n4pdf1ga` (Region: `us-east-1`, PostgreSQL 18.6 + `pgvector`)
-- **License**: MIT
+**2. Schema first, model second.** The model gets a system prompt with extraction rules and the full JSON schema for an order. A few of those rules came from watching it get things wrong:
 
+- *A name in a greeting ("Hey Sarah!") is usually the merchant, not the customer.* Without this, the model cheerfully assigned the baker's name to the customer.
+- *Keep dates as the customer wrote them.* "Saturday" is more useful to a baker than a guessed calendar date.
+- *Keep the unit ("boxes", "dozen") in the item notes*, so catalog matching can price a box rather than a single cupcake.
+
+The model's output then goes through a normalizing step (prices or quantities that come back as strings, missing arrays, stray markdown fences) before deterministic code computes totals and missing fields. I don't let the LLM do arithmetic or decide what's "required".
+
+**3. Catalog matching for prices and allergens.** Customers never use the merchant's product names. A matcher scores each extracted item against the catalog, handling plurals and words like "boxes", and fills in the SKU name, unit price, and allergen list. It only fills items that don't already have a price, so anything the merchant typed is never overwritten. If nothing matches (say, "blueberry muffins"), the item stays unpriced instead of getting a guess.
+
+**4. Local-first storage.** Saved orders live in the browser's IndexedDB via Dexie. There's no account and no server-side order database by default; the merchant's ledger is on their device and exports to CSV/JSON.
+
+**5. Tiger Data.** I used the Tiger MCP server from my editor to provision a Tiger Cloud service (PostgreSQL + TimescaleDB + pgvector). It holds the schema in [`scripts/setup-tiger.sql`](https://github.com/Shashank-blip/OrderSift/blob/main/scripts/setup-tiger.sql): a `merchant_catalog` table with a `vector(384)` embedding column for semantic matching, and a `customer_orders_sync` table for opt-in cross-device order sync.
+
+**6. Deployment.** One Dockerfile (multi-stage, standalone Next.js output, non-root user) plus a `docker-compose.yml` that points at Ollama on the host, so a merchant can self-host the whole thing. The public demo runs on Vercel.
+
+## Why Does Open Innovation Matter?
+
+For a side-hustle tool, open weights are the business model, not a nice-to-have.
+
+**The same model can run anywhere.** `gpt-oss` runs on Groq for the hosted demo, and the same model family runs on a merchant's laptop through Ollama. Switching is an environment variable, not a rewrite. A closed API gives you exactly one place to run it, at that vendor's price.
+
+**Privacy is a real choice, not a promise.** Order messages are full of personal data: names, phone numbers, home addresses, and health information like allergies. With the hosted demo, that text goes to an inference provider. With the self-hosted Docker + Ollama setup, it never leaves the merchant's machine. I can only offer that second option because the weights are open. With a closed model, "trust us" is the only privacy policy available.
+
+**The cost floor is near zero.** A baker parsing a couple hundred messages a month shouldn't be paying a per-token bill that grows with their success. Open-weight models on cheap hosted inference (or free local inference) let OrderSift be priced like a small tool, not like a cloud bill.
+
+**No single point of failure.** When my first hosted model ID disappeared, the fix was to pick another open model from the list. Because multiple providers serve the same open weights, no single provider can deprecate my product out from under me.
+
+## My Agent Session
+
+<!-- Optional: save the session with DevRelay and embed it with the agent_session tag from the challenge page, or delete this section. -->
+
+## Prize Categories
+
+- **Best Use of Tiger Data**
